@@ -1,3 +1,15 @@
+/* 
+
+Before you begin, please install run-func via 
+npm i -g run-func
+and lodash via 
+npm i lodash
+
+run this code by simply typing:
+run-func main.js startCalculations 
+
+*/
+
 let int_array = [];
 let str_array = [];
 let array_size = 100000;
@@ -5,13 +17,49 @@ let array_size = 100000;
 let int_timing_array = [];
 let str_timing_array = [];
 
-max_int_size = 1000000000000;
+max_int_size = 1000000000000000;
+
+const _ = require("lodash");
+const fs = require("fs");
+
+module.exports = { startCalculations }; //very important
+
+async function startCalculations() {
+  await generateIntArray();
+  await generateStrArray();
+  console.log("Arrays Generated... Processing...");
+  //first calculate for ints
+  await calcTimingForInt();
+  console.log("Int Array Processed");
+
+  // then for strs
+  await calcTimingForStr();
+  console.log("Int Array Processed");
+
+  resp = await findAverage();
+  int_timing = ` 
+                   Mean: ${resp[0]} 
+                   Min: ${resp[1]}
+                   Max: ${resp[2]}
+                   Median: ${resp[3]}  `;
+  console.log(int_timing);
+
+  str_timing = ` 
+                    Mean: ${resp[4]} 
+                    Min: ${resp[5]}
+                    Max: ${resp[6]}
+                    Median: ${resp[7]}  `;
+
+  console.log(str_timing);
+  console.log("Done!");
+}
 
 async function generateIntArray() {
   int_array = [];
   for (let i = 0; i < array_size; i++) {
     int_array.push(Math.round(Math.random() * max_int_size));
   }
+  console.log(int_array);
   console.log("Int Array generated");
   return 0;
 }
@@ -21,37 +69,9 @@ async function generateStrArray() {
   for (let i = 0; i < array_size; i++) {
     str_array.push(Math.round(Math.random() * max_int_size).toString());
   }
+  console.log(str_array);
   console.log("Str Array generated");
   return 0;
-}
-
-async function startCalculations() {
-  await generateIntArray();
-  await generateStrArray();
-  document.getElementById("buttonx").innerText =
-    "Arrays Generated... Processing...";
-  //first calculate for ints
-  await calcTimingForInt();
-  document.getElementById("buttonx").innerText = "Int Array Processed";
-
-  // then for strs
-  await calcTimingForStr();
-  document.getElementById("buttonx").innerText = "Int Array Processed";
-
-  resp = await findAverage();
-  int_timing = ` Mean: ${resp[0]} 
-                   Min: ${resp[1]}
-                   Max: ${resp[2]}
-                   Mode: ${resp[3]}  `;
-  document.getElementById("intLookupTime").innerText = int_timing;
-
-  str_timing = ` Mean: ${resp[4]} 
-                    Min: ${resp[5]}
-                    Max: ${resp[6]}
-                    Mode: ${resp[7]}  `;
-
-  document.getElementById("strLookupTime").innerText = str_timing;
-  document.getElementById("buttonx").innerText = "Done!";
 }
 
 async function calcTimingForInt() {
@@ -73,21 +93,36 @@ async function calcTimingForInt() {
 async function calcTimingForStr() {
   //let's calculate for strs:
   console.log("Str Timing Work Started");
+  t1x = performance.now();
   for (let i = 0; i < array_size; i++) {
     let x = Math.round(Math.random() * max_int_size);
     t1 = performance.now();
     if (_.indexOf(str_array, x) > -1) {
       t2 = performance.now();
       str_timing_array.push(Math.round((t2 - t1) * 1000)); //microseconds
+      //console.log(Math.round((t2 - t1) * 1000));
     } else {
       t2 = performance.now();
       str_timing_array.push(Math.round((t2 - t1) * 1000)); //microseconds
+      //console.log(Math.round((t2 - t1) * 1000));
     }
   }
+  t2x = performance.now();
+  //   console.log(t2x - t1x);
   return 0;
 }
-
+async function saveFile(filename, data) {
+  if (typeof data != "string") {
+    data = data.toString();
+  }
+  fs.writeFile(filename, data, (err) => {
+    // In case of a error throw err.
+    if (err) throw err;
+  });
+}
 async function findAverage() {
+  await saveFile("int_timings.txt", int_timing_array.toString());
+
   console.log("Avgs processing started");
   let int_avg = _.mean(int_timing_array);
   let int_min = _.min(int_timing_array);
@@ -99,6 +134,7 @@ async function findAverage() {
   let str_max = _.max(str_timing_array);
   let str_mode = await median(str_timing_array);
   console.log("Avgs processing complete");
+  await saveFile("str_timings.txt", str_timing_array.toString());
   return [
     int_avg,
     int_min,
@@ -124,14 +160,3 @@ async function median(values) {
 
   return (values[half - 1] + values[half]) / 2.0;
 }
-
-// Integer Lookup Timing for 100k iterations :
-// Mean: 723.37
-// Min: 0
-// Max: 3000
-// Mode: 1000
-// String Lookup Timing for 100k iterations :
-// Mean: 609.59
-// Min: 0
-// Max: 3000
-// Mode: 1000
